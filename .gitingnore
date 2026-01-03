@@ -1,0 +1,20 @@
+# Секреты
+.env
+
+# Базы данных
+*.db
+*.sqlite3
+
+# Файлы, генерируемые во время работы
+heartbeat.txt
+backups/
+
+# Специфичное для Python
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Специфичное для IDE (если используете PyCharm, VSCode и т.д.)
+.idea/
+.vscode/
