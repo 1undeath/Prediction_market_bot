@@ -4,26 +4,32 @@ import shutil
 import datetime
 import requests
 import psutil
-import sys  # Added import for sys.exit()
+import sys
+from dotenv import load_dotenv # <--- Импортируем библиотеку
 
 # ===========================
-# ⚙️ НАСТРОЙКИ TELEGRAM
+# ⚙️ НАСТРОЙКИ
 # ===========================
-import os
 
-TG_BOT_TOKEN = os.getenv("ыTELEGRAM_BOT_TOKEN")
+load_dotenv()
+
+
+TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
+
 if not TG_BOT_TOKEN or not TG_CHAT_ID:
-    print("❌ CRITICAL ERROR: Environment variables are not set!")
-    sys.exit(1)  # Правильный выход с кодом ошибки
-# Настройки файлов
-MAIN_BOT_FILE = "gemini.py"
+    print("❌ CRITICAL ERROR: Токены не найдены! Проверьте файл .env")
+    sys.exit(1)
+
+
+MAIN_BOT_FILE = "DS_PM_eng.py" 
+
 DB_FILE = "prediction_market.db"
 HEARTBEAT_FILE = "heartbeat.txt"
 BACKUP_FOLDER = "backups"
 
-# Таймаут (если бот молчит столько секунд - тревога)
+# Таймаут (секунды)
 TIMEOUT_SECONDS = 180 
 # ===========================
 
@@ -51,9 +57,10 @@ def is_process_running():
     """Проверка, запущен ли вообще python скрипт"""
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
-            # Проблема: проверка только по имени файла, можно обмануть
-            if 'python' in proc.info['name'].lower() and any(MAIN_BOT_FILE in arg for arg in proc.info['cmdline']):
-                return True
+            # Проверяем, есть ли процесс python, в аргументах которого есть имя нашего файла
+            if proc.info['name'] and 'python' in proc.info['name'].lower():
+                if proc.info['cmdline'] and any(MAIN_BOT_FILE in arg for arg in proc.info['cmdline']):
+                    return True
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return False
@@ -67,19 +74,20 @@ def check_heartbeat():
         with open(HEARTBEAT_FILE, 'r') as f:
             last_beat = float(f.read().strip())
         
+        # Если пульс был обновлен более TIMEOUT_SECONDS назад
         if time.time() - last_beat > TIMEOUT_SECONDS:
-            return False # Протух!
+            return False 
     except:
-        return True # Ошибка чтения, игнорируем пока
+        return True # Ошибка чтения (например, файл занят), игнорируем
         
     return True
 
 # --- ГЛАВНЫЙ ЦИКЛ ---
-print("🛡️ Telegram Watchdog запущен...")
-send_telegram("🛡️ Сторож запущен на сервере!")
+print(f"🛡️ Сторож запущен! Слежу за: {MAIN_BOT_FILE}")
+send_telegram(f"🛡️ Сторож запущен на сервере! Слежу за `{MAIN_BOT_FILE}`")
 
 last_backup_time = time.time()
-alert_sent = False # Чтобы не спамить уведомлениями каждую секунду
+alert_sent = False 
 
 while True:
     # 1. ПРОВЕРКИ
@@ -88,16 +96,16 @@ while True:
     
     if not process_alive:
         if not alert_sent:
-            send_telegram(f"🚨 **ALARM!** Процесс {MAIN_BOT_FILE} упал (выключился)!")
+            send_telegram(f"🚨 **ALARM!** Процесс `{MAIN_BOT_FILE}` упал (не найден в задачах)!")
             alert_sent = True
     elif not pulse_alive:
         if not alert_sent:
-            send_telegram(f"⚠️ **WARNING!** Бот завис или потерял сеть! (Нет пульса > 3 мин)")
+            send_telegram(f"⚠️ **WARNING!** Бот `{MAIN_BOT_FILE}` завис! (Нет пульса > {TIMEOUT_SECONDS}с)")
             alert_sent = True
     else:
-        # Если всё починилось (или было норм)
+        # Если бот поднялся после падения
         if alert_sent:
-            send_telegram("✅ Бот снова в строю!")
+            send_telegram(f"✅ Бот `{MAIN_BOT_FILE}` снова в строю!")
             alert_sent = False
 
     # 2. БЭКАП (Раз в 24 часа)
@@ -105,18 +113,19 @@ while True:
         ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
         backup_path = f"{BACKUP_FOLDER}/backup_{ts}.db"
         try:
-            shutil.copy2(DB_FILE, backup_path)
-            send_telegram_file(backup_path, caption=f"📦 Ежедневный бэкап: {ts}")
-            last_backup_time = time.time()
-            
-            # Чистка старых (оставляем 3)
-            files = sorted([os.path.join(BACKUP_FOLDER, f) for f in os.listdir(BACKUP_FOLDER)])
-            while len(files) > 3:
-                os.remove(files[0])
-                files.pop(0)
+            if os.path.exists(DB_FILE):
+                shutil.copy2(DB_FILE, backup_path)
+                send_telegram_file(backup_path, caption=f"📦 Ежедневный бэкап: {ts}")
+                last_backup_time = time.time()
+                
+                # Чистка старых (оставляем 3 последних)
+                files = sorted([os.path.join(BACKUP_FOLDER, f) for f in os.listdir(BACKUP_FOLDER)])
+                while len(files) > 3:
+                    os.remove(files[0])
+                    files.pop(0)
+            else:
+                print("⚠️ База данных не найдена для бэкапа (это нормально при первом запуске)")
         except Exception as e:
             send_telegram(f"❌ Не удалось сделать бэкап: {e}")
 
     time.sleep(10) # Проверка каждые 10 секунд
-
-
