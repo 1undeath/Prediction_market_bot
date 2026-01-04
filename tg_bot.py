@@ -4,19 +4,19 @@ import shutil
 import datetime
 import requests
 import psutil
+import sys  # Added import for sys.exit()
 
 # ===========================
 # ⚙️ НАСТРОЙКИ TELEGRAM
 # ===========================
 import os
 
-TG_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TG_BOT_TOKEN = os.getenv("ыTELEGRAM_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 if not TG_BOT_TOKEN or not TG_CHAT_ID:
     print("❌ CRITICAL ERROR: Environment variables are not set!")
-    exit() # Это число (integer)
-
+    sys.exit(1)  # Правильный выход с кодом ошибки
 # Настройки файлов
 MAIN_BOT_FILE = "gemini.py"
 DB_FILE = "prediction_market.db"
@@ -51,9 +51,11 @@ def is_process_running():
     """Проверка, запущен ли вообще python скрипт"""
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
-            if 'python' in proc.info['name'] and any(MAIN_BOT_FILE in arg for arg in proc.info['cmdline']):
+            # Проблема: проверка только по имени файла, можно обмануть
+            if 'python' in proc.info['name'].lower() and any(MAIN_BOT_FILE in arg for arg in proc.info['cmdline']):
                 return True
-        except: pass
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
     return False
 
 def check_heartbeat():
@@ -116,3 +118,5 @@ while True:
             send_telegram(f"❌ Не удалось сделать бэкап: {e}")
 
     time.sleep(10) # Проверка каждые 10 секунд
+
+
