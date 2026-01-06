@@ -32,7 +32,7 @@ Users trade **YES/NO** shares on the outcome of future events. Share prices are 
     ```
 
 4.  **Configure Channel IDs:**
-    Open `gemini3.py` (lines 20-22) and replace the IDs with your server's IDs:
+    Open `LMSR_clean.py` (lines 20-22) and replace the IDs with your server's IDs:
     *   `ADMIN_CHANNEL_ID` — Hidden channel for incoming proposals.
     *   `MARKETS_CHANNEL_ID` — Public channel where markets are posted.
 
