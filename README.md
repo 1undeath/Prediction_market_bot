@@ -1,6 +1,6 @@
 # 🔮 Discord Prediction Market Bot (LMSR v3)
 
-A professional Prediction Market bot for Discord powered by the **LMSR (Logarithmic Market Scoring Rule)** algorithm.
+A Prediction Market bot for Discord powered by the **LMSR (Logarithmic Market Scoring Rule)** algorithm.
 Users buy and sell shares of future events. Unlike traditional betting, this uses an **Automated Market Maker (AMM)** system, ensuring guaranteed liquidity and dynamic pricing based on supply and demand.
 
 ## ✨ Key Features
