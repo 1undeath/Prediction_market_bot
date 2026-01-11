@@ -67,7 +67,7 @@ Users buy and sell shares of future events. Unlike traditional betting, this use
 
     # Auto-Resolve Settings
     AUTO_RESOLVE_ENABLED = True
-    AUTO_RESOLVE_THRESHOLD = 51         # Winner declared if >51%
+    AUTO_RESOLVE_THRESHOLD = 75         # Winner declared if >75%
     CHECK_EXPIRED_INTERVAL_MINUTES = 1  # How often to check timers
     APPEAL_WINDOW_HOURS = 24
     MANUAL_RESOLVE_RANGE = 0.05
